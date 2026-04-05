@@ -1,0 +1,29 @@
+# --- Google Apps Script / clasp ---
+# IDs do projeto Apps Script (scriptId) e configs locais
+.clasp.json
+
+# Credenciais / tokens do clasp (NUNCA commitar)
+.clasprc.json
+
+# --- VS Code / SO ---
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Logs / temporários ---
+*.log
+*.tmp
+*.temp
+
+# --- Node (caso use para tooling) ---
+node_modules/
+.npm/
+
+# --- Ambiente ---
+.env
+.env.*
+
+# --- Build outputs (genéricos) ---
+dist/
+build/
+coverage/

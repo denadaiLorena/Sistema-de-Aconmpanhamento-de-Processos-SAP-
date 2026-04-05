@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    /* Ajuste para scrollbar em modais longos */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-screen-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
+    <div class="bg-gradient-to-r from-slate-900 to-blue-900 p-6 shadow-inner">
+      <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+        <span class="bg-blue-500/20 p-2 rounded-lg text-blue-300" aria-hidden="true">
+          <i class="fa-solid fa-globe"></i>
+        </span>
+        SAP - Sistema de Acompanhamento de Processos
+      </h1>
+      <p class="text-blue-200/80 text-sm mt-1 ml-12">Gestão de Ajuizamento Bancário</p>
+    </div>
+
+    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+      <div class="flex gap-4">
+        <button onclick="carregar()" id="btn-atualizar"
+          class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold py-2 px-6 rounded-lg transition-all duration-200 shadow-sm flex items-center gap-2 active:scale-95">
+          <span id="icon-btn" aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span> Atualizar Dados
+        </button>
+
+        <button onclick="abrirCriacao()" id="btn-novo"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 active:scale-95">
+          <span aria-hidden="true"><i class="fa-solid fa-plus"></i></span> Novo Processo 
+        </button>
+      </div>
+      <span id="status-msg" class="text-sm text-slate-400 font-medium italic"></span>
+    </div>
+
+    <div class="p-6 bg-slate-50/50">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Filtros de Pesquisa</h2>
+        <button id="btn-ordenar-prioridade" type="button" aria-pressed="false"
+          class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm active:scale-95">
+          Prioridade: OFF
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-slate-600">ID do Processo</label>
+          <input id="search-processo" oninput="this.value = normalizarBusca(this.value)" 
+            class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+            placeholder="Ex: PROCESSO_001" />
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-slate-600">Nome do Cliente</label>
+          <input id="search-cliente" oninput="this.value = normalizarBuscaParaInput(this.value)" 
+            class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+            placeholder="Ex: JOAO SILVA" />
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-slate-600">Código do Contrato</label>
+          <input id="search-contrato" oninput="this.value = normalizarBusca(this.value)" 
+            class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+            placeholder="Ex: 12345" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Status do Processo</label>
+          <select id="filter-status" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Todos os Status</option>
+            <option value="INICIADO">INICIADO</option>
+            <option value="ANALISANDO">ANALISANDO</option>
+            <option value="PENDENTE">PENDENTE</option>
+            <option value="PARALISADO">PARALISADO</option>
+            <option value="FINALIZADO">FINALIZADO</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Prioridade</label>
+          <select id="filter-prioridade" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Todas</option>
+            <option value="SIM">Com Prioridade</option>
+            <option value="NAO">Sem Prioridade</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Viabilidade Financeira</label>
+          <select id="filter-viabilidade" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Todas</option>
+            <option value="VIAVEL">Viável</option>
+            <option value="INVIAVEL">Inviável</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto p-4">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">ID</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Cliente</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Valor da Dívida</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Garantia</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Prioridade</th>
+            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Viabilidade</th>
+            <th class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela" class="bg-white divide-y divide-slate-100">
+          </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="modal-criacao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      
+      <div class="bg-slate-50 p-6 border-b border-slate-100 flex justify-between items-center">
+        <h2 id="modal-processo-titulo" class="text-xl font-bold text-slate-800">Formulário de Processo</h2>
+        <button onclick="fecharCriacao()" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="p-8 custom-scrollbar max-h-[75vh] overflow-y-auto bg-white">
+        <div class="mb-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Processo (ID)</label>
+              <div id="new-processo" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-500 font-medium"></div>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Código do Contrato</label>
+              <input id="new-contrato" oninput="this.value = normalizarBusca(this.value)" 
+                class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Documento (CPF/CNPJ)</label>
+              <div class="flex items-center gap-3 mt-1 mb-2">
+                <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+                  <input id="new-doc-tipo-cpf" type="radio" name="new-doc-tipo" value="CPF" class="text-blue-600 focus:ring-blue-500" checked> CPF
+                </label>
+                <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+                  <input id="new-doc-tipo-cnpj" type="radio" name="new-doc-tipo" value="CNPJ" class="text-blue-600 focus:ring-blue-500"> CNPJ
+                </label>
+              </div>
+              <div class="relative">
+                <input id="new-documento" inputmode="numeric" oninput="aplicarMascaraDocumentoNovoProcesso()" 
+                  class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="000.000.000-00">
+                <div id="new-doc-busca-status" class="absolute right-2 top-2.5 hidden items-center gap-2 bg-white pl-2">
+                   <div class="w-4 h-4 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+                </div>
+              </div>
+              <div id="new-doc-busca-descricao" class="mt-1 hidden text-xs text-slate-500 italic" aria-live="polite">Buscando cliente…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2">
+              <label class="text-xs font-bold text-slate-500 uppercase">Nome Completo do Cliente</label>
+              <input id="new-cliente" oninput="this.value = normalizarNomeCliente(this.value)" 
+                class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Produto</label>
+              <select id="new-produtoId" class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 bg-white outline-none"></select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Unidade Operacional</label>
+              <select id="new-unidadeId" class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 bg-white outline-none"></select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase text-slate-400">Seg/Sub (Automático)</label>
+              <input id="new-segsub" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-400 cursor-not-allowed" readonly disabled>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase text-slate-400">CID (Automático)</label>
+              <input id="new-cid" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-400 cursor-not-allowed" readonly disabled>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Valor da Dívida</label>
+              <input id="new-valor" oninput="formatarMoedaInput(this)" 
+                class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 text-right font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="R$ 0,00">
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Status Atual</label>
+              <select id="new-status" class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 bg-white outline-none">
+                <option value="INICIADO">INICIADO</option>
+                <option value="ANALISANDO">ANALISANDO</option>
+                <option value="PENDENTE">PENDENTE</option>
+                <option value="PARALISADO">PARALISADO</option>
+                <option value="FINALIZADO">FINALIZADO</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-500 uppercase">Garantia</label>
+              <select id="new-garantia" class="mt-1 w-full border border-slate-300 rounded-lg p-2.5 bg-white outline-none">
+                <option value="NENHUMA">NENHUMA</option>
+                <option value="CARRO">CARRO</option>
+                <option value="MOTO">MOTO</option>
+                <option value="CASA/APARTAMENTO">CASA/APARTAMENTO</option>
+                <option value="EQUIPAMENTO">EQUIPAMENTO</option>
+              </select>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+              <label class="text-[10px] font-bold text-blue-500 uppercase">Prioridade</label>
+              <input id="new-prioridade" class="w-full bg-transparent border-none p-0 text-sm font-bold text-blue-700 outline-none cursor-default" readonly disabled>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <label class="text-[10px] font-bold text-slate-500 uppercase">Viabilidade</label>
+              <input id="new-viavel" class="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-700 outline-none cursor-default" readonly disabled>
+            </div>
+            <div class="flex flex-col justify-center">
+               <span class="text-[10px] text-slate-400 uppercase font-medium italic">Última atualização: <span id="new-atualizacao">--</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+        <button onclick="fecharCriacao()" class="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">Descartar</button>
+        <button id="btn-criar-processo" onclick="salvarCriacao()" 
+          class="px-8 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
+          Salvar Processo
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal de Visualização (somente leitura) -->
+  <div id="modal-visualizacao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4" aria-hidden="true">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="bg-slate-50 p-6 border-b border-slate-100 flex justify-between items-center">
+        <h2 class="text-xl font-bold text-slate-800">Visualizar Processo</h2>
+        <button onclick="fecharVisualizacao()" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="p-8 custom-scrollbar max-h-[75vh] overflow-y-auto bg-white">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Processo (ID)</label>
+            <div id="view-processo" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Status</label>
+            <div id="view-status" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Código do Contrato</label>
+            <div id="view-contrato" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-xs font-bold text-slate-500 uppercase">Cliente</label>
+            <div id="view-cliente" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Documento (CPF/CNPJ)</label>
+            <div id="view-documento" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Produto</label>
+            <div id="view-produto" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Seg/Sub</label>
+            <div id="view-segsub" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Unidade Operacional</label>
+            <div id="view-unidade" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">CID</label>
+            <div id="view-cid" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Valor da Dívida</label>
+            <div id="view-valor" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Garantia</label>
+            <div id="view-garantia" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Prioridade</label>
+            <div id="view-prioridade" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Viabilidade</label>
+            <div id="view-viabilidade" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Data de Criação</label>
+            <div id="view-criacao" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase">Última Atualização</label>
+            <div id="view-atualizacao" class="mt-1 w-full border border-slate-200 rounded-lg p-2.5 bg-slate-50 text-slate-700 font-medium"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button onclick="fecharVisualizacao()" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors active:scale-95">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-carregando" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] hidden items-center justify-center z-[100]">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
+      <div class="text-center">
+        <div class="text-base font-bold text-slate-800">Processando...</div>
+        <div id="carregando-mensagem" class="text-xs text-slate-500 mt-1 italic">Sincronizando com o servidor</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-aviso" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[110] p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-slate-50 p-5 border-b border-slate-100 flex justify-between items-center">
+        <h3 id="aviso-titulo" class="text-base font-bold text-slate-800">Aviso</h3>
+        <button onclick="fecharAviso()" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p id="aviso-mensagem" class="text-sm text-slate-600 leading-relaxed"></p>
+      </div>
+      <div class="p-5 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button onclick="fecharAviso()" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors active:scale-95">Ok</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-confirmacao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[110] p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="bg-slate-50 p-5 border-b border-slate-100 flex justify-between items-center">
+        <h3 id="confirmacao-titulo" class="text-base font-bold text-slate-800">Confirmação</h3>
+        <button onclick="fecharConfirmacao(false)" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p id="confirmacao-mensagem" class="text-sm text-slate-600 leading-relaxed"></p>
+      </div>
+      <div class="p-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+        <button onclick="fecharConfirmacao(false)" class="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors active:scale-95">Cancelar</button>
+        <button onclick="fecharConfirmacao(true)" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors active:scale-95">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    // Estado principal da tela
+    let listaProcessos = [];
+    let ordenacaoPrioridadeAtiva = false;
+
+    // =========================
+    // Normalização de texto
+    // =========================
+
+    /** Remove acentos para padronizar buscas e comparações */
+    function removerAcentos(valor) {
+      if (valor === null || valor === undefined) return '';
+      return String(valor)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    /** Normaliza textos para comparação */
+    function normalizarTexto_(valor, opts) {
+      const o = opts || {};
+      let out = removerAcentos(valor).toUpperCase();
+      if (o.colapsarEspacos) out = out.replace(/\s+/g, ' ');
+      if (o.trim) out = out.trim();
+      return out;
+    }
+
+    /** Normalização específica para nome do cliente (tudo maiúsculo e sem acentos) */
+    function normalizarNomeCliente(valor) {
+      return normalizarTexto_(valor);
+    }
+
+    /** Normalização usada em filtros: remove espaços duplicados e aplica trim */
+    function normalizarBusca(valor) {
+      return normalizarTexto_(valor, { colapsarEspacos: true, trim: true });
+    }
+
+    /** Normalização para inputs em tempo real (mantém espaços finais enquanto digita) */
+    function normalizarBuscaParaInput(valor) {
+      return normalizarTexto_(valor, { colapsarEspacos: true, trim: false });
+    }
+
+    /** Extrai somente dígitos (usado para CPF/CNPJ) */
+    function somenteDigitos(valor) {
+      if (valor === null || valor === undefined) return '';
+      return String(valor).replace(/\D/g, '');
+    }
+
+    // =========================
+    // Máscara de documento (CPF/CNPJ)
+    // =========================
+
+    /** Formata um CPF a partir de uma string (11 dígitos)*/
+    function formatarCPF(digitos) {
+      const d = String(digitos || '').slice(0, 11);
+      const p1 = d.slice(0, 3);
+      const p2 = d.slice(3, 6);
+      const p3 = d.slice(6, 9);
+      const p4 = d.slice(9, 11);
+
+      let out = p1;
+      if (p2) out += '.' + p2;
+      if (p3) out += '.' + p3;
+      if (p4) out += '-' + p4;
+      return out;
+    }
+
+    /** Formata um CNPJ a partir de uma string (14 dígitos)*/
+    function formatarCNPJ(digitos) {
+      const d = String(digitos || '').slice(0, 14);
+      const p1 = d.slice(0, 2);
+      const p2 = d.slice(2, 5);
+      const p3 = d.slice(5, 8);
+      const p4 = d.slice(8, 12);
+      const p5 = d.slice(12, 14);
+
+      let out = p1;
+      if (p2) out += '.' + p2;
+      if (p3) out += '.' + p3;
+      if (p4) out += '/' + p4;
+      if (p5) out += '-' + p5;
+      return out;
+    }
+
+    /** Retorna o tipo de documento selecionado no modal (CPF/CNPJ). */
+    function getTipoDocumentoNovoProcesso() {
+      return document.getElementById('new-doc-tipo-cnpj')?.checked ? 'CNPJ' : 'CPF';
+    }
+
+    /** Ajusta a formatação do input conforme o tipo selecionado (CPF ou CNPJ) */
+    function atualizarPlaceholderDocumentoNovoProcesso() {
+      const el = document.getElementById('new-documento');
+      if (!el) return;
+      const tipo = getTipoDocumentoNovoProcesso();
+      el.placeholder = (tipo === 'CNPJ') ? '00.000.000/0000-00' : '000.000.000-00';
+    }
+
+    /**
+     * Aplica a máscara (CPF/CNPJ) no input enquanto o usuário digita
+     * Quando os dígitos forem inseridos, chama o servidor, que dispara uma busca na planilha
+     * para tentar autocompletar o nome do cliente, se existir.
+     */
+    function aplicarMascaraDocumentoNovoProcesso() {
+      const el = document.getElementById('new-documento');
+      if (!el) return;
+
+      const tipo = getTipoDocumentoNovoProcesso();
+      const digitos = somenteDigitos(el.value);
+
+      el.value = (tipo === 'CNPJ') ? formatarCNPJ(digitos) : formatarCPF(digitos);
+
+      buscarClientePorDocumentoNovoProcessoDebounced(digitos);
+    }
+
+    /** Valida documento conforme o tipo informado (CPF=11, CNPJ=14). */
+    function validarDocumentoPorTipo_(tipo, documento) {
+      const d = somenteDigitos(documento || '');
+      if (!d) return { ok: false, mensagem: 'Informe o documento (CPF/CNPJ).' };
+
+      if (tipo === 'CPF' && d.length !== 11) {
+        return { ok: false, mensagem: 'CPF inválido: deve conter 11 dígitos.' };
+      }
+      if (tipo === 'CNPJ' && d.length !== 14) {
+        return { ok: false, mensagem: 'CNPJ inválido: deve conter 14 dígitos.' };
+      }
+      if (tipo !== 'CPF' && tipo !== 'CNPJ') {
+        return { ok: false, mensagem: 'Tipo de documento inválido.' };
+      }
+
+      return { ok: true, digitos: d };
+    }
+
+    /**
+     * Valida campos obrigatórios no modal de criação/edição.
+     */
+    function validarCamposObrigatoriosProcesso_(campos) {
+      const faltando = [];
+
+      const pushIfEmpty = (valor, label) => {
+        const v = (valor === null || valor === undefined) ? '' : String(valor).trim();
+        if (!v) faltando.push(label);
+      };
+
+      pushIfEmpty(campos.contratoCodigo, 'Contrato');
+      pushIfEmpty(campos.clienteDocumento, 'Documento');
+      pushIfEmpty(campos.clienteNome, 'Nome do cliente');
+      pushIfEmpty(campos.produtoId, 'Produto');
+      pushIfEmpty(campos.unidadeId, 'Unidade');
+      pushIfEmpty(campos.valorTexto, 'Valor');
+      pushIfEmpty(campos.status, 'Status');
+      pushIfEmpty(campos.garantia, 'Garantia');
+
+      if (faltando.length > 0) {
+        return {
+          ok: false,
+          mensagem: 'Preencha todos os campos obrigatórios: ' + faltando.join(', ') + '.'
+        };
+      }
+
+      return { ok: true };
+    }
+
+    // =========================
+    // Busca de cliente por documento
+    // =========================
+
+    // Timer do debounce (evita chamadas a cada tecla)
+    let buscarClienteDocTimer = null;
+    // Memo do último documento “completo” consultado
+    let ultimoDocPesquisado = '';
+    // Controle simples de concorrência: garante que só a última requisição atualize o UI
+    let buscarClienteDocReqId = 0;
+    let buscarClienteDocReqAtivo = 0;
+
+    /** Mostra/oculta o spinner e o texto “Buscando cliente…” no modal. */
+    function setStatusBuscaDocumentoNovoProcesso(ativo) {
+      const el = document.getElementById('new-doc-busca-status');
+      const elDesc = document.getElementById('new-doc-busca-descricao');
+      if (!el) return;
+      if (ativo) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+
+        if (elDesc) elDesc.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+
+        if (elDesc) elDesc.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Faz a busca no servidor quando CPF/CNPJ estiver completo.
+     * - Debounce de 300ms
+     * - Ignora resultados “atrasados” (reqId)
+     */
+    function buscarClientePorDocumentoNovoProcessoDebounced(digitos) {
+      const d = String(digitos || '');
+      const tipo = getTipoDocumentoNovoProcesso();
+      const tamanhoOk = (tipo === 'CPF') ? (d.length === 11) : (d.length === 14);
+
+      if (!tamanhoOk) {
+        ultimoDocPesquisado = '';
+        setStatusBuscaDocumentoNovoProcesso(false);
+        if (buscarClienteDocTimer) {
+          clearTimeout(buscarClienteDocTimer);
+          buscarClienteDocTimer = null;
+        }
+        return;
+      }
+
+      if (d === ultimoDocPesquisado) return;
+
+      if (buscarClienteDocTimer) clearTimeout(buscarClienteDocTimer);
+      buscarClienteDocTimer = setTimeout(() => {
+        const reqId = ++buscarClienteDocReqId;
+        buscarClienteDocReqAtivo = reqId;
+        setStatusBuscaDocumentoNovoProcesso(true);
+
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (reqId !== buscarClienteDocReqAtivo) return;
+            setStatusBuscaDocumentoNovoProcesso(false);
+            if (!res || !res.encontrado) return;
+            const nome = res.nome ? String(res.nome) : '';
+            if (!nome) return;
+
+            const elNome = document.getElementById('new-cliente');
+            if (!elNome) return;
+            elNome.value = normalizarNomeCliente(nome);
+          })
+          .withFailureHandler((err) => {
+            if (reqId !== buscarClienteDocReqAtivo) return;
+            setStatusBuscaDocumentoNovoProcesso(false);
+            console.error('Falha ao buscar cliente por documento:', err);
+          })
+          .buscarClientePorDocumentoServidor(d);
+
+        ultimoDocPesquisado = d;
+        buscarClienteDocTimer = null;
+      }, 300);
+    }
+
+    // =========================
+    // Filtros + ordenação
+    // =========================
+
+    /**
+     * Aplica os filtros selecionados (inputs e selects) e re-renderiza a tabela.
+     * Quando `ordenacaoPrioridadeAtiva` estiver ON, prioriza itens com `prioridade=true` no topo.
+     */
+    function aplicarFiltros() {
+      const qProcesso = normalizarBusca(document.getElementById('search-processo')?.value);
+      const qCliente = normalizarBusca(document.getElementById('search-cliente')?.value);
+      const qContrato = normalizarBusca(document.getElementById('search-contrato')?.value);
+      const fStatus = normalizarBusca(document.getElementById('filter-status')?.value);
+      const fPrioridade = normalizarBusca(document.getElementById('filter-prioridade')?.value);
+      const fViabilidade = normalizarBusca(document.getElementById('filter-viabilidade')?.value);
+
+      const base = Array.isArray(listaProcessos) ? listaProcessos : [];
+      const filtradosBase = base.filter((p) => {
+        const processo = normalizarBusca(p?.processo);
+        const cliente = normalizarBusca(p?.clienteNome);
+        const contrato = normalizarBusca(p?.contratoCodigo);
+        const status = normalizarBusca(p?.andamento);
+
+        const prioridadeBool = (typeof p?.prioridade === 'boolean')
+          ? p.prioridade
+          : normalizarBusca(p?.prioridade) === 'SIM';
+
+        const viavelBool = (typeof p?.isViavel === 'boolean')
+          ? p.isViavel
+          : normalizarBusca(p?.isViavel) === 'VIAVEL';
+
+        if (qProcesso && !processo.includes(qProcesso)) return false;
+        if (qCliente && !cliente.includes(qCliente)) return false;
+        if (qContrato && !contrato.includes(qContrato)) return false;
+        if (fStatus && status !== fStatus) return false;
+        if (fPrioridade === 'SIM' && !prioridadeBool) return false;
+        if (fPrioridade === 'NAO' && prioridadeBool) return false;
+        if (fViabilidade === 'VIAVEL' && !viavelBool) return false;
+        if (fViabilidade === 'INVIAVEL' && viavelBool) return false;
+        return true;
+      });
+
+      // Ordenação opcional por prioridade.
+      // Mantemos “sort estável” (via idx) para não embaralhar itens sem necessidade.
+      let filtrados = filtradosBase;
+      if (ordenacaoPrioridadeAtiva) {
+        filtrados = (Array.isArray(filtradosBase) ? filtradosBase : [])
+          .map((p, idx) => ({ p, idx }))
+          .sort((a, b) => {
+            const ap = (typeof a.p?.prioridade === 'boolean') ? a.p.prioridade : (normalizarBusca(a.p?.prioridade) === 'SIM');
+            const bp = (typeof b.p?.prioridade === 'boolean') ? b.p.prioridade : (normalizarBusca(b.p?.prioridade) === 'SIM');
+
+            if (ap === bp) return a.idx - b.idx; // estável
+            return ap ? -1 : 1;
+          })
+          .map(x => x.p);
+      }
+
+      exibirTabela(filtrados);
+    }
+
+    /** Atualiza o visual e o botão ON/OFF de ordenação por prioridade. */
+    function atualizarBotaoOrdenacaoPrioridade_() {
+      const btn = document.getElementById('btn-ordenar-prioridade');
+      if (!btn) return;
+
+      btn.setAttribute('aria-pressed', ordenacaoPrioridadeAtiva ? 'true' : 'false');
+      btn.textContent = ordenacaoPrioridadeAtiva ? 'Prioridade: ON' : 'Prioridade: OFF';
+
+      if (ordenacaoPrioridadeAtiva) {
+        btn.classList.remove('bg-white', 'hover:bg-slate-50', 'text-slate-700', 'border-slate-300');
+        btn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white', 'border-blue-600');
+      } else {
+        btn.classList.add('bg-white', 'hover:bg-slate-50', 'text-slate-700', 'border-slate-300');
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white', 'border-blue-600');
+      }
+    }
+
+    /** Alterna a ordenação por prioridade e reaplica os filtros. */
+    function toggleOrdenacaoPrioridade() {
+      ordenacaoPrioridadeAtiva = !ordenacaoPrioridadeAtiva;
+      atualizarBotaoOrdenacaoPrioridade_();
+      aplicarFiltros();
+    }
+
+    // =========================
+    // Modais utilitários (Carregando / Aviso / Confirmação)
+    // =========================
+
+    // Resolve functions para “aguardar” fechamento do modal via Promise.
+    let avisoResolve = null;
+    let confirmacaoResolve = null;
+
+    // Contador para permitir chamadas aninhadas de carregamento
+    // (só fecha quando todas as operações terminarem).
+    let carregandoCount = 0;
+
+    /** Abre o modal de carregamento com mensagem */
+    function mostrarCarregando(mensagem) {
+      carregandoCount++;
+      const modal = document.getElementById('modal-carregando');
+      const elMsg = document.getElementById('carregando-mensagem');
+
+      if (elMsg) elMsg.textContent = mensagem ? String(mensagem) : '';
+
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    /** Fecha o modal de carregamento quando não houver mais operações pendentes */
+    function esconderCarregando() {
+      carregandoCount = Math.max(0, carregandoCount - 1);
+      if (carregandoCount > 0) return;
+
+      const modal = document.getElementById('modal-carregando');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    /**
+     * Mostra modal de aviso.
+     * Retorna uma Promise que resolve quando o usuário clica em “Ok”.
+     */
+    function mostrarAviso(mensagem, titulo) {
+      const modal = document.getElementById('modal-aviso');
+      const elTitulo = document.getElementById('aviso-titulo');
+      const elMsg = document.getElementById('aviso-mensagem');
+
+      if (!modal || !elTitulo || !elMsg) {
+        // Fallback de segurança: evita “travamento silencioso” caso o HTML do modal tenha sido removido.
+        alert((titulo ? String(titulo) + "\n\n" : '') + (mensagem ? String(mensagem) : ''));
+        return Promise.resolve();
+      }
+
+      elTitulo.textContent = titulo ? String(titulo) : 'Aviso';
+      elMsg.textContent = mensagem ? String(mensagem) : '';
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      return new Promise((resolve) => {
+        avisoResolve = resolve;
+      });
+    }
+
+    /** Fecha o modal de aviso e resolve a Promise pendente (se houver). */
+    function fecharAviso() {
+      const modal = document.getElementById('modal-aviso');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      if (typeof avisoResolve === 'function') {
+        const r = avisoResolve;
+        avisoResolve = null;
+        r();
+      }
+    }
+
+    /**
+     * Mostra modal de confirmação.
+     * Retorna Promise<boolean> com a escolha do usuário.
+     */
+    function mostrarConfirmacao(mensagem, titulo) {
+      const modal = document.getElementById('modal-confirmacao');
+      const elTitulo = document.getElementById('confirmacao-titulo');
+      const elMsg = document.getElementById('confirmacao-mensagem');
+
+      if (!modal || !elTitulo || !elMsg) {
+        // Fallback de segurança
+        const ok = confirm((titulo ? String(titulo) + "\n\n" : '') + (mensagem ? String(mensagem) : ''));
+        return Promise.resolve(!!ok);
+      }
+
+      elTitulo.textContent = titulo ? String(titulo) : 'Confirmação';
+      elMsg.textContent = mensagem ? String(mensagem) : '';
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      return new Promise((resolve) => {
+        confirmacaoResolve = resolve;
+      });
+    }
+
+    /** Fecha o modal de confirmação e resolve a Promise pendente com true/false. */
+    function fecharConfirmacao(confirmado) {
+      const modal = document.getElementById('modal-confirmacao');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      if (typeof confirmacaoResolve === 'function') {
+        const r = confirmacaoResolve;
+        confirmacaoResolve = null;
+        r(!!confirmado);
+      }
+    }
+
+    // =========================
+    // Catálogos (Produtos / Unidades)
+    // =========================
+
+    // Cache local dos catálogos para evitar várias idas ao servidor.
+    let CATALOGOS = null;
+    // Utilizado Map() para “indexar” os catálogos por ID.
+    // No processo, precisamos consultar Produto/Unidade, entre outros, pelo ID várias vezes. Com Map, a busca é direta: PRODUTOS_POR_ID.get(id)
+    let PRODUTOS_POR_ID = new Map();
+    let UNIDADES_POR_ID = new Map();
+
+    /**
+     * Atualiza os campos “Prioridade” e “Viabilidade” do modal em tempo real.
+     * Isso deixa a regra de negócio visível enquanto o usuário preenche os dados.
+     */
+    function atualizarPrioridadeViabilidadeNoModal_() {
+      const elGarantia = document.getElementById('new-garantia');
+      const elValor = document.getElementById('new-valor');
+      const elPrioridade = document.getElementById('new-prioridade');
+      const elViavel = document.getElementById('new-viavel');
+
+      if (!elGarantia || !elValor || !elPrioridade || !elViavel) return;
+
+      const garantia = String(elGarantia.value || '').trim().toUpperCase();
+      const valorNumero = formatarMoedaParaNumero(elValor.value);
+
+      const prioridade = calcularPrioridade_(garantia);
+      const isViavel = calcularViabilidade_(valorNumero);
+
+      elPrioridade.value = prioridade ? 'Sim' : 'Não';
+      elViavel.value = isViavel ? 'Viável' : 'Não viável';
+    }
+
+    /** Helper: cria opções (<option>) de um <select> de um jeito padronizado */
+    function optionEl(value, label) {
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = label;
+      return opt;
+    }
+
+    /** Preenche um <select> com os itens do catálogo. */
+    function popularSelectCatalogo(selectEl, itens, placeholder) {
+      selectEl.innerHTML = '';
+      selectEl.appendChild(optionEl('', placeholder));
+      (itens || []).forEach((it) => {
+        const label = it.nome ? String(it.nome) : '';
+        selectEl.appendChild(optionEl(it.id, label));
+      });
+    }
+
+    /** Ao trocar produto, atualiza o campo Seg/Sub com base no catálogo. */
+    function onProdutoChange(prefix, fallbackSegSub) {
+      const produtoId = document.getElementById(`${prefix}-produtoId`).value;
+      const segSubEl = document.getElementById(`${prefix}-segsub`);
+      const prod = PRODUTOS_POR_ID.get(produtoId);
+      segSubEl.value = (prod?.segSub || fallbackSegSub || '').toUpperCase();
+    }
+
+    /** Ao trocar unidade, atualiza o campo CID com base no catálogo. */
+    function onUnidadeChange(prefix, fallbackCid) {
+      const unidadeId = document.getElementById(`${prefix}-unidadeId`).value;
+      const cidEl = document.getElementById(`${prefix}-cid`);
+      const un = UNIDADES_POR_ID.get(unidadeId);
+      cidEl.value = (un?.cid || fallbackCid || '').toUpperCase();
+    }
+
+    /** Registra listeners de change para manter campos automáticos (Seg/Sub e CID) atualizados. */
+    function vincularSelectsCatalogo() {
+      document.getElementById('new-produtoId').addEventListener('change', () => onProdutoChange('new'));
+      document.getElementById('new-unidadeId').addEventListener('change', () => onUnidadeChange('new'));
+    }
+
+    /**
+     * Busca Produtos/Unidades no servidor e popular os selects do modal.
+     * Mantém também mapas por ID para montar/atualizar a `listaProcessos` no client.
+     */
+    function carregarCatalogos() {
+      return new Promise((resolve, reject) => {
+        mostrarCarregando('Carregando catálogos…');
+        google.script.run
+          .withSuccessHandler((cat) => {
+            CATALOGOS = cat;
+            // Converte arrays (lista de produtos/unidades) em Map
+            // Ex.: new Map([["123", {id: 123, nome: "..."}], ...]
+            PRODUTOS_POR_ID = new Map((cat?.produtos || []).map(p => [String(p.id), p]));
+            UNIDADES_POR_ID = new Map((cat?.unidades || []).map(u => [String(u.id), u]));
+
+            popularSelectCatalogo(document.getElementById('new-produtoId'), cat?.produtos, 'Selecione um produto');
+            popularSelectCatalogo(document.getElementById('new-unidadeId'), cat?.unidades, 'Selecione uma unidade');
+
+            esconderCarregando();
+            resolve(cat);
+          })
+          .withFailureHandler((err) => {
+            esconderCarregando();
+            reject(err);
+          })
+          .listarCatalogosServidor();
+      });
+    }
+
+    /**
+     * Carrega os processos no servidor e atualiza a tabela.
+     * O retorno já vem “completo” (join) via `buscarDadosCompletos()`.
+     */
+    function carregar() {
+      const btn = document.getElementById('btn-atualizar');
+      const status = document.getElementById('status-msg');
+      
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+      status.textContent = "Buscando dados no banco...";
+
+      mostrarCarregando('Buscando dados…');
+
+      google.script.run
+        .withSuccessHandler(dados => {
+          listaProcessos = dados;
+          aplicarFiltros();
+
+          esconderCarregando();
+          
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+          status.textContent = "Atualizado agora";
+        })
+        .withFailureHandler(erro => {
+          console.error("Erro:", erro);
+          mostrarAviso("Erro ao carregar: " + erro.message, 'Erro');
+
+          esconderCarregando();
+          btn.disabled = false;
+          status.textContent = "Falha na atualização";
+        })
+        .buscarDadosCompletos();
+    }
+
+    /**
+     * Renderiza a tabela a partir da lista recebida.
+     * Importante: a regra de ordenação/filtros acontece antes (em `aplicarFiltros`).
+     */
+    function exibirTabela(dados) {
+      const corpo = document.getElementById('corpo-tabela');
+      corpo.innerHTML = ""; 
+
+      dados.forEach(proc => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50 transition-colors";
+
+        // Badge de Status (cores por status)
+        const statusKey = String(proc.andamento || '').trim().toUpperCase();
+        let statusBadgeClass = 'text-gray-600 px-2 py-1 rounded-full text-xs font-semibold';
+        switch (statusKey) {
+          case 'INICIADO':
+            statusBadgeClass = 'text-slate-500 px-2 py-1 rounded-full text-xs font-semibold';
+            break;
+          case 'ANALISANDO':
+            statusBadgeClass = 'text-sky-700 px-2 py-1 rounded-full text-xs font-semibold';
+            break;
+          case 'PENDENTE':
+            statusBadgeClass = 'text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold';
+            break;
+          case 'PARALISADO':
+            statusBadgeClass = 'text-rose-700 px-2 py-1 rounded-full text-xs font-semibold';
+            break;
+          case 'FINALIZADO':
+            statusBadgeClass = 'text-emerald-700 px-2 py-1 rounded-full text-xs font-semibold';
+            break;
+          default:
+            statusBadgeClass = 'text-slate-700 px-2 py-1 rounded-full text-xs font-semibold';
+        }
+
+        // Regra de Negócio: Viabilidade (valor >= 15000)
+        const textoViabilidade = proc.isViavel ? 'VIÁVEL' : 'INVIÁVEL';
+
+        // Garantia é exibida como texto “padrão” (sem badge).
+        const garantiaTexto = (proc.garantiaTipo && String(proc.garantiaTipo).trim())
+          ? String(proc.garantiaTipo).trim()
+          : 'NENHUMA';
+
+        // Prioridade pode vir como boolean (normal) ou como string (por compatibilidade).
+        const prioridadeBool = (typeof proc?.prioridade === 'boolean')
+          ? proc.prioridade
+          : normalizarBusca(proc?.prioridade) === 'SIM';
+
+        const prioridadeTexto = prioridadeBool ? 'SIM' : 'NÃO';
+
+      tr.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${proc.processo}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${proc.clienteNome}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+          ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(proc.contratoValor)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="px-2 py-1 text-xs font-medium rounded-md border ${statusBadgeClass}">${proc.andamento}</span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${garantiaTexto}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${prioridadeTexto}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${textoViabilidade}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+          <div class="flex justify-center gap-3">
+            <button onclick="abrirVisualizacao('${proc.processo}')" class="text-slate-600 hover:text-slate-900 p-1 rounded hover:bg-slate-100 transition-colors" title="Visualizar">
+              <i class="fa-solid fa-eye" aria-hidden="true"></i>
+            </button>
+            <button onclick="prepararEdicao('${proc.processo}')" class="text-slate-600 hover:text-slate-900 p-1 rounded hover:bg-slate-100 transition-colors" title="Editar">
+              <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            </button>
+            <button onclick="confirmarExclusao('${proc.processo}')" class="text-slate-600 hover:text-slate-900 p-1 rounded hover:bg-slate-100 transition-colors" title="Excluir">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            </button>
+          </div>
+        </td>
+      `;
+        corpo.appendChild(tr);
+      });
+    }
+
+    // =========================
+    // Visualização (somente leitura)
+    // =========================
+
+    /** Mostra/oculta o modal de visualização. */
+    function setModalVisualizacaoVisivel_(visivel) {
+      const modal = document.getElementById('modal-visualizacao');
+      if (!modal) return;
+      if (visivel) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.setAttribute('aria-hidden', 'false');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    /** Fecha o modal de visualização. */
+    function fecharVisualizacao() {
+      setModalVisualizacaoVisivel_(false);
+    }
+
+    /** Abre o modal de visualização e preenche com todos os dados do processo. */
+    function abrirVisualizacao(id) {
+      const proc = (Array.isArray(listaProcessos) ? listaProcessos : []).find(p => String(p?.processo) === String(id));
+      if (!proc) {
+        mostrarAviso('Processo não encontrado para visualização.', 'Erro');
+        return;
+      }
+
+      const garantiaTexto = (proc.garantiaTipo && String(proc.garantiaTipo).trim())
+        ? String(proc.garantiaTipo).trim()
+        : 'NENHUMA';
+
+      const prioridadeBool = (typeof proc?.prioridade === 'boolean')
+        ? proc.prioridade
+        : normalizarBusca(proc?.prioridade) === 'SIM';
+
+      const prioridadeTexto = prioridadeBool ? 'SIM' : 'NÃO';
+      const viabilidadeTexto = proc.isViavel ? 'VIÁVEL' : 'INVIÁVEL';
+
+      setValorOuTexto_('view-processo', proc.processo ?? '');
+      setValorOuTexto_('view-status', proc.andamento ?? '');
+      setValorOuTexto_('view-contrato', proc.contratoCodigo ?? '');
+
+      setValorOuTexto_('view-cliente', proc.clienteNome ?? '');
+      setValorOuTexto_('view-documento', proc.clienteDocumento ?? '');
+
+      setValorOuTexto_('view-produto', proc.produtoNome ?? '');
+      setValorOuTexto_('view-segsub', proc.segmentoEsubseguimento ?? '');
+      setValorOuTexto_('view-unidade', proc.unidadeNome ?? '');
+      setValorOuTexto_('view-cid', proc.unidadeCID ?? '');
+
+      const valorFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(proc.contratoValor) || 0);
+      setValorOuTexto_('view-valor', valorFormatado);
+
+      setValorOuTexto_('view-garantia', garantiaTexto);
+      setValorOuTexto_('view-prioridade', prioridadeTexto);
+      setValorOuTexto_('view-viabilidade', viabilidadeTexto);
+
+      setValorOuTexto_('view-criacao', formatarDataPtBR(proc.dataCriacao));
+      setValorOuTexto_('view-atualizacao', formatarDataPtBR(proc.dataAtualizacao));
+
+      setModalVisualizacaoVisivel_(true);
+    }
+
+    // =========================
+    // Bootstrap (inicialização da tela)
+    // =========================
+
+    /** Registra listeners e dispara o carregamento inicial (catálogos -> processos). */
+    window.addEventListener('load', () => {
+      vincularSelectsCatalogo();
+
+      document.getElementById('btn-ordenar-prioridade')?.addEventListener('click', toggleOrdenacaoPrioridade);
+      atualizarBotaoOrdenacaoPrioridade_();
+
+      document.getElementById('search-processo')?.addEventListener('input', aplicarFiltros);
+      document.getElementById('search-cliente')?.addEventListener('input', aplicarFiltros);
+      document.getElementById('search-contrato')?.addEventListener('input', aplicarFiltros);
+      document.getElementById('filter-status')?.addEventListener('change', aplicarFiltros);
+      document.getElementById('filter-prioridade')?.addEventListener('change', aplicarFiltros);
+      document.getElementById('filter-viabilidade')?.addEventListener('change', aplicarFiltros);
+
+      document.getElementById('new-doc-tipo-cpf')?.addEventListener('change', () => {
+        atualizarPlaceholderDocumentoNovoProcesso();
+        aplicarMascaraDocumentoNovoProcesso();
+      });
+      document.getElementById('new-doc-tipo-cnpj')?.addEventListener('change', () => {
+        atualizarPlaceholderDocumentoNovoProcesso();
+        aplicarMascaraDocumentoNovoProcesso();
+      });
+
+      atualizarPlaceholderDocumentoNovoProcesso();
+      setStatusBuscaDocumentoNovoProcesso(false);
+
+      // Tempo real: atualiza prioridade/viabilidade quando o usuário muda o valor ou garantia.
+      document.getElementById('new-garantia')?.addEventListener('change', atualizarPrioridadeViabilidadeNoModal_);
+      document.getElementById('new-valor')?.addEventListener('input', atualizarPrioridadeViabilidadeNoModal_);
+      atualizarPrioridadeViabilidadeNoModal_();
+
+      // Primeiro carrega catálogos (para selects e mapas por ID), depois carrega processos.
+      carregarCatalogos()
+        .catch((e) => {
+          console.error('Falha ao carregar catálogos:', e);
+          return mostrarAviso('Falha ao carregar Produtos/Unidades.', 'Erro');
+        })
+        .finally(() => carregar());
+    });
+
+
+    // =========================
+    // Ações da tabela (Editar / Excluir)
+    // =========================
+
+    /**
+     * Fluxo de exclusão:
+     * 1) Abre modal de confirmação
+     * 2) Se confirmado, chama o servidor para excluir
+     * 3) Atualiza o estado local e re-renderiza a tabela
+     */
+    async function confirmarExclusao(id) {
+      const proc = listaProcessos.find(p => p.processo == id);
+      const clienteNome = proc && proc.clienteNome ? String(proc.clienteNome) : '';
+      const msg = clienteNome
+        ? `Tem certeza que deseja excluir o processo ${id} do cliente ${clienteNome}?`
+        : `Tem certeza que deseja excluir o processo ${id}?`;
+
+      const confirmado = await mostrarConfirmacao(msg, 'Confirmar exclusão');
+      if (confirmado) {
+        console.log("Solicitando exclusão do ID:", id);
+        
+        // Mostra um feedback visual de carregamento
+        document.getElementById('status-msg').textContent = "Excluindo...";
+
+        mostrarCarregando('Excluindo processo…');
+        
+        google.script.run
+          .withSuccessHandler(() => {
+            esconderCarregando();
+            mostrarAviso("Processo excluído com sucesso!", 'Sucesso').then(() => {
+              document.getElementById('status-msg').textContent = "Excluído";
+              listaProcessos = (Array.isArray(listaProcessos) ? listaProcessos : []).filter(p => String(p?.processo) !== String(id));
+              aplicarFiltros();
+            });
+          })
+          .withFailureHandler(err => {
+            console.error('Erro ao excluir:', err);
+            document.getElementById('status-msg').textContent = "Falha ao excluir";
+            esconderCarregando();
+            mostrarAviso("Erro ao excluir: " + (err && err.message ? err.message : err), 'Erro');
+          })
+          .excluirProcessoServidor(id);
+      }
+    }
+
+    /**
+     * Abre o modal no modo edição, preenchendo os campos a partir do registro selecionado.
+     * Não chama o servidor aqui: só preenche o formulário.
+     */
+    function prepararEdicao(id) {
+      const proc = listaProcessos.find(p => p.processo == id);
+
+      if (!proc) {
+        mostrarAviso("Processo não encontrado", 'Erro');
+        return;
+      }
+
+      const modal = document.getElementById('modal-criacao');
+      modal.dataset.mode = 'edit';
+      modal.dataset.processoId = String(proc.processo ?? '');
+      modal.dataset.clientNowMs = String(Date.now());
+
+      document.getElementById('modal-processo-titulo').textContent = 'Editar Processo';
+
+      const btn = document.getElementById('btn-criar-processo');
+      btn.textContent = 'Salvar';
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+      document.getElementById('new-processo').textContent = String(proc.processo ?? '');
+      document.getElementById('new-contrato').value = normalizarBusca(proc.contratoCodigo ?? '');
+
+      // Documento + tipo (usa o padrão do modal Novo Processo)
+      {
+        const dig = somenteDigitos(proc.clienteDocumento ?? '');
+        if (dig.length === 14) {
+          document.getElementById('new-doc-tipo-cnpj').checked = true;
+        } else {
+          document.getElementById('new-doc-tipo-cpf').checked = true;
+        }
+        atualizarPlaceholderDocumentoNovoProcesso();
+        document.getElementById('new-documento').value = (getTipoDocumentoNovoProcesso() === 'CNPJ') ? formatarCNPJ(dig) : formatarCPF(dig);
+        setStatusBuscaDocumentoNovoProcesso(false);
+      }
+
+      document.getElementById('new-cliente').value = (proc.clienteNome && proc.clienteNome !== 'Não encontrado') ? normalizarNomeCliente(proc.clienteNome) : '';
+
+      document.getElementById('new-produtoId').value = proc.produtoId ?? '';
+      document.getElementById('new-unidadeId').value = proc.unidadeId ?? '';
+      onProdutoChange('new', proc.segmentoEsubseguimento ?? '');
+      onUnidadeChange('new', proc.unidadeCID ?? '');
+
+      document.getElementById('new-valor').value = formatarNumeroParaMoeda(proc.contratoValor);
+      document.getElementById('new-status').value = proc.andamento || 'INICIADO';
+      document.getElementById('new-garantia').value = (proc.garantiaTipo || 'NENHUMA').toUpperCase();
+
+      setValorOuTexto_('new-criacao', formatarDataPtBR(proc.dataCriacao));
+      setValorOuTexto_('new-atualizacao', formatarDataPtBR(proc.dataAtualizacao));
+      document.getElementById('new-prioridade').value = proc.prioridade ? 'Sim' : 'Não';
+      document.getElementById('new-viavel').value = proc.isViavel ? 'Viável' : 'Não viável';
+
+      atualizarPrioridadeViabilidadeNoModal_();
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    /** Mostra/oculta o modal de criação/edição. */
+    function setModalCriacaoVisivel_(visivel) {
+      const modal = document.getElementById('modal-criacao');
+      if (!modal) return;
+      if (visivel) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    /** Regra de negócio: prioridade quando a garantia for diferente de NENHUMA. */
+    function calcularPrioridade_(garantia) {
+      return String(garantia || '').trim().toUpperCase() !== 'NENHUMA';
+    }
+
+    /** Regra de negócio: viável quando valor >= 15000. */
+    function calcularViabilidade_(valorNumero) {
+      return Number(valorNumero) >= 15000;
+    }
+
+    /**
+     * Reseta o modal para o modo “create”.
+     * Isso evita abrir o modal com valores “sujos” da última edição.
+     */
+    function resetModalCriacaoParaNovo_() {
+      const modal = document.getElementById('modal-criacao');
+      if (!modal) return;
+
+      modal.dataset.mode = 'create';
+      delete modal.dataset.processoId;
+      delete modal.dataset.clientNowMs;
+
+      const titulo = document.getElementById('modal-processo-titulo');
+      if (titulo) titulo.textContent = 'Novo Processo';
+
+      document.getElementById('new-processo').textContent = '';
+
+      document.getElementById('new-contrato').value = '';
+      document.getElementById('new-cliente').value = '';
+      document.getElementById('new-documento').value = '';
+      document.getElementById('new-valor').value = '';
+      document.getElementById('new-status').value = 'INICIADO';
+
+      document.getElementById('new-doc-tipo-cpf').checked = true;
+      atualizarPlaceholderDocumentoNovoProcesso();
+      setStatusBuscaDocumentoNovoProcesso(false);
+
+      document.getElementById('new-garantia').value = 'NENHUMA';
+
+      document.getElementById('new-produtoId').value = '';
+      document.getElementById('new-unidadeId').value = '';
+      onProdutoChange('new');
+      onUnidadeChange('new');
+
+      const btnCriar = document.getElementById('btn-criar-processo');
+      btnCriar.textContent = 'Criar Processo';
+      btnCriar.disabled = false;
+      btnCriar.classList.remove('opacity-50', 'cursor-not-allowed');
+
+      atualizarPrioridadeViabilidadeNoModal_();
+    }
+
+    /**
+     * Abre o modal no modo “novo processo”.
+     * Gera o ID no servidor (async) e habilita o botão de salvar quando chegar.
+     */
+    function abrirCriacao() {
+      const modal = document.getElementById('modal-criacao');
+      const now = Date.now();
+      modal.dataset.clientNowMs = String(now);
+
+      // Reset padrão do modal (evita reabrir "sujo")
+      resetModalCriacaoParaNovo_();
+
+      // Abre imediatamente (sem esperar servidor)
+      document.getElementById('new-processo').textContent = 'Gerando…';
+      const btnCriar = document.getElementById('btn-criar-processo');
+      btnCriar.disabled = true;
+      btnCriar.classList.add('opacity-50', 'cursor-not-allowed');
+
+      setModalCriacaoVisivel_(true);
+
+      setValorOuTexto_('new-criacao', formatarDataPtBR(now));
+      setValorOuTexto_('new-atualizacao', formatarDataPtBR(now));
+      document.getElementById('new-prioridade').value = 'Não';
+      document.getElementById('new-viavel').value = '';
+
+      atualizarPrioridadeViabilidadeNoModal_();
+
+      google.script.run
+        .withSuccessHandler(id => {
+          esconderCarregando();
+          modal.dataset.processoId = String(id);
+          document.getElementById('new-processo').textContent = String(id);
+
+          btnCriar.disabled = false;
+          btnCriar.classList.remove('opacity-50', 'cursor-not-allowed');
+        })
+        .withFailureHandler(err => {
+          esconderCarregando();
+          document.getElementById('new-processo').textContent = 'Erro';
+          btnCriar.disabled = true;
+          btnCriar.classList.add('opacity-50', 'cursor-not-allowed');
+          mostrarAviso('Erro ao gerar ID do processo: ' + (err && err.message ? err.message : err), 'Erro');
+        })
+        .gerarNovoProcessoId();
+
+    }
+
+    /** Fecha o modal e reseta para o estado padrão de “novo processo”. */
+    function fecharCriacao() {
+      setModalCriacaoVisivel_(false);
+      resetModalCriacaoParaNovo_();
+    }
+
+    /** Retorna o modo atual do modal: 'create' ou 'edit'. */
+    function getModoModalProcesso_() {
+      const modal = document.getElementById('modal-criacao');
+      return (modal?.dataset?.mode === 'edit') ? 'edit' : 'create';
+    }
+
+    /**
+     * Salva o formulário do modal.
+     * - Modo create: chama `criarProcessoServidor`
+     * - Modo edit: chama `editarProcessoServidor`
+     * Em ambos, atualiza `listaProcessos` no client e re-renderiza.
+     */
+    function salvarCriacao() {
+      const modal = document.getElementById('modal-criacao');
+      const processoId = modal.dataset.processoId;
+      const mode = getModoModalProcesso_();
+      const isEdicao = mode === 'edit';
+      const clientNowMs = Date.now();
+
+      if (!processoId) {
+        mostrarAviso('Erro: ID do processo não carregado.', 'Erro');
+        return;
+      }
+
+      const valorNumero = formatarMoedaParaNumero(document.getElementById('new-valor').value);
+      const garantia = document.getElementById('new-garantia').value.toUpperCase();
+      const prioridade = calcularPrioridade_(garantia);
+      const isViavel = calcularViabilidade_(valorNumero);
+
+      document.getElementById('new-prioridade').value = prioridade ? 'Sim' : 'Não';
+      document.getElementById('new-viavel').value = isViavel ? 'Viável' : 'Não viável';
+
+      const dados = {
+        id: String(processoId),
+        clientNowMs,
+
+        contratoCodigo: normalizarBusca(document.getElementById('new-contrato').value).trim(),
+        valor: valorNumero,
+        garantia: garantia,
+        status: document.getElementById('new-status').value,
+
+        clienteNome: normalizarNomeCliente(document.getElementById('new-cliente').value).trim(),
+        clienteDocumento: document.getElementById('new-documento').value.trim(),
+
+        produtoId: document.getElementById('new-produtoId').value.trim(),
+        unidadeId: document.getElementById('new-unidadeId').value.trim(),
+      };
+
+      {
+        const vCampos = validarCamposObrigatoriosProcesso_({
+          contratoCodigo: dados.contratoCodigo,
+          clienteDocumento: dados.clienteDocumento,
+          clienteNome: dados.clienteNome,
+          produtoId: dados.produtoId,
+          unidadeId: dados.unidadeId,
+          valorTexto: document.getElementById('new-valor').value,
+          status: dados.status,
+          garantia: dados.garantia,
+        });
+        if (!vCampos.ok) {
+          mostrarAviso(vCampos.mensagem, 'Erro');
+          return;
+        }
+      }
+
+      {
+        const tipo = getTipoDocumentoNovoProcesso();
+        const v = validarDocumentoPorTipo_(tipo, dados.clienteDocumento);
+        if (!v.ok) {
+          mostrarAviso(v.mensagem, 'Erro');
+          return;
+        }
+      }
+
+      const runner = google.script.run
+        .withSuccessHandler((res) => {
+          esconderCarregando();
+
+          if (res) {
+            console.log('Retorno do servidor (salvar):', res);
+          }
+
+          if (!isEdicao) {
+            mostrarAviso('Processo criado com sucesso!', 'Sucesso').then(() => {
+              const produtoId = String(dados.produtoId || '');
+              const unidadeId = String(dados.unidadeId || '');
+              const produto = PRODUTOS_POR_ID.get(produtoId);
+              const unidade = UNIDADES_POR_ID.get(unidadeId);
+
+              const novoRegistro = {
+                processo: String(dados.id),
+
+                clienteId: '',
+                produtoId: produtoId,
+                unidadeId: unidadeId,
+
+                clienteNome: dados.clienteNome,
+                clienteDocumento: dados.clienteDocumento,
+
+                produtoNome: produto?.nome || 'N/A',
+                segmentoEsubseguimento: produto?.segSub || 'N/A',
+
+                unidadeNome: unidade?.nome || 'N/A',
+                unidadeCID: unidade?.cid || 'N/A',
+
+                contratoCodigo: dados.contratoCodigo,
+                contratoValor: Number(dados.valor) || 0,
+
+                garantiaTipo: dados.garantia,
+                andamento: dados.status,
+
+                dataCriacao: Number(dados.clientNowMs) || Date.now(),
+                dataAtualizacao: Number(dados.clientNowMs) || Date.now(),
+
+                prioridade: calcularPrioridade_(dados.garantia),
+                isViavel: calcularViabilidade_(dados.valor),
+              };
+
+              listaProcessos = Array.isArray(listaProcessos) ? listaProcessos : [];
+              listaProcessos.unshift(novoRegistro);
+              aplicarFiltros();
+
+              fecharCriacao();
+            });
+            return;
+          }
+
+          mostrarAviso('Atualizado com sucesso!', 'Sucesso').then(() => {
+            const id = String(dados.id);
+            const idx = (Array.isArray(listaProcessos) ? listaProcessos : []).findIndex(p => String(p?.processo) === id);
+
+            if (idx !== -1) {
+              const atual = listaProcessos[idx];
+              const produtoId = String(dados.produtoId || '');
+              const unidadeId = String(dados.unidadeId || '');
+              const produto = PRODUTOS_POR_ID.get(produtoId);
+              const unidade = UNIDADES_POR_ID.get(unidadeId);
+
+              listaProcessos[idx] = {
+                ...atual,
+
+                produtoId: produtoId,
+                unidadeId: unidadeId,
+
+                clienteNome: dados.clienteNome,
+                clienteDocumento: dados.clienteDocumento,
+
+                produtoNome: produto?.nome || atual?.produtoNome || 'N/A',
+                segmentoEsubseguimento: produto?.segSub || atual?.segmentoEsubseguimento || 'N/A',
+
+                unidadeNome: unidade?.nome || atual?.unidadeNome || 'N/A',
+                unidadeCID: unidade?.cid || atual?.unidadeCID || 'N/A',
+
+                contratoCodigo: dados.contratoCodigo,
+                contratoValor: Number(dados.valor) || 0,
+
+                garantiaTipo: dados.garantia,
+                andamento: dados.status,
+
+                dataAtualizacao: Date.now(),
+                prioridade: calcularPrioridade_(dados.garantia),
+                isViavel: calcularViabilidade_(dados.valor),
+              };
+            }
+
+            aplicarFiltros();
+            fecharCriacao();
+          });
+        })
+        .withFailureHandler(err => {
+          esconderCarregando();
+          mostrarAviso('Erro: ' + (err && err.message ? err.message : err), 'Erro');
+        });
+
+      if (isEdicao) {
+        mostrarCarregando('Salvando alterações…');
+        runner.editarProcessoServidor(dados);
+      } else {
+        mostrarCarregando('Criando processo…');
+        runner.criarProcessoServidor(dados);
+      }
+    }
+
+    // =========================
+    // Formatação (moeda / data) e helpers finais
+    // =========================
+
+    /** Formata o input de moeda enquanto o usuário digita (pt-BR, 2 casas) */
+    function formatarMoedaInput(input) {
+      let valor = input.value.replace(/\D/g, "");
+
+      valor = (Number(valor) / 100).toFixed(2);
+
+      valor = valor
+        .replace(".", ",")
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+      input.value = valor;
+    }
+
+    /** Converte número para string pt-BR (ex.: 15000 -> "15.000,00") */
+    function formatarNumeroParaMoeda(numero) {
+      const n = Number(numero);
+      if (!isFinite(n)) return '';
+      return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    }
+
+    /** Formata timestamp/date para dd/mm/aaaa hh:mm no fuso do usuário */
+    function formatarDataPtBR(valor) {
+      if (valor === null || valor === undefined || valor === '') return '';
+      const d = new Date(valor);
+      if (isNaN(d.getTime())) return '';
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      }).format(d);
+    }
+
+    /**
+     * Define valor em inputs/selects ou texto em spans/divs.
+     * Ajuda a reutilizar o mesmo código para campos “visuais” e “editáveis”.
+     */
+    function setValorOuTexto_(id, valor) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const v = (valor === null || valor === undefined) ? '' : String(valor);
+
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
+        el.value = v;
+        return;
+      }
+
+      el.textContent = v;
+    }
+
+      // Fecha o modal ao clicar no “fundo” (fora do card)
+      {
+        const modalCriacao = document.getElementById('modal-criacao');
+        if (modalCriacao) {
+          modalCriacao.addEventListener('click', function(e) {
+            if (e.target === this) fecharCriacao();
+          });
+        }
+      }
+
+      // Fecha o modal de visualização ao clicar no “fundo” (fora do card)
+      {
+        const modalVisualizacao = document.getElementById('modal-visualizacao');
+        if (modalVisualizacao) {
+          modalVisualizacao.addEventListener('click', function(e) {
+            if (e.target === this) fecharVisualizacao();
+          });
+        }
+      }
+
+  /** Converte string de moeda pt-BR para número ("15.000,00" -> 15000). */
+  function formatarMoedaParaNumero(valor) {
+    if (!valor) return 0;
+
+    return Number(
+      valor
+        .replace(/\./g, "")  // tira milhar
+        .replace(",", ".")   // vírgula vira ponto
+    );
+  }
+  </script>
+
+</body>
+
+</html>
+
+
+
