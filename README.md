@@ -76,12 +76,3 @@ A aplicação espera uma planilha com abas (sheets) no formato do desafio:
 - `Unidades`
 
 Se você precisar trocar o ID da planilha usada pelo backend, ajuste a configuração correspondente no `Servidor.js` (onde o código abre a planilha via `SpreadsheetApp`).
-
-## Segurança
-
-- **Não commite** `.clasprc.json` (pode conter token OAuth) e `.clasp.json` (contém `scriptId`). Eles já estão no `.gitignore`.
-- Se esses arquivos já existirem na sua pasta local, tudo bem — apenas evite versionar.
-
-## Licença
-
-Defina a licença do repositório no GitHub (ex.: MIT) se você quiser torná-lo público/reutilizável.
